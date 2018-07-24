@@ -1,31 +1,31 @@
-var Analyse = function (src) {
+п»їvar Analyse = function (src) {
     var an = this;
         //AudioContext = w.AudioContext || w.webkitAudioContext;
 
-    //Создание источника
+    //РЎРѕР·РґР°РЅРёРµ РёСЃС‚РѕС‡РЅРёРєР°
     this.audio = new Audio(src);
     //this.audio.src = src;
     this.audio.controls = true;
-    //Создаем аудио-контекст
+    //РЎРѕР·РґР°РµРј Р°СѓРґРёРѕ-РєРѕРЅС‚РµРєСЃС‚
     this.context = new AudioContext();
     this.node = this.context.createScriptProcessor(2048, 1, 1);
-    //Создаем анализатор
+    //РЎРѕР·РґР°РµРј Р°РЅР°Р»РёР·Р°С‚РѕСЂ
     this.analyser = this.context.createAnalyser();
     this.analyser.smoothingTimeConstant = 0.3;
     this.analyser.fftSize = 512;
     this.bands = new Uint8Array(this.analyser.frequencyBinCount);
-    //Подписываемся на событие
+    //РџРѕРґРїРёСЃС‹РІР°РµРјСЃСЏ РЅР° СЃРѕР±С‹С‚РёРµ
     this.audio.addEventListener('canplay', function () {
-        //отправляем на обработку в  AudioContext 
+        //РѕС‚РїСЂР°РІР»СЏРµРј РЅР° РѕР±СЂР°Р±РѕС‚РєСѓ РІ  AudioContext 
         an.source = an.context.createMediaElementSource(an.audio);
-        //связываем источник и анализатором
+        //СЃРІСЏР·С‹РІР°РµРј РёСЃС‚РѕС‡РЅРёРє Рё Р°РЅР°Р»РёР·Р°С‚РѕСЂРѕРј
         an.source.connect(an.analyser);
-        //связываем анализатор с интерфейсом, из которого он будет получать данные
+        //СЃРІСЏР·С‹РІР°РµРј Р°РЅР°Р»РёР·Р°С‚РѕСЂ СЃ РёРЅС‚РµСЂС„РµР№СЃРѕРј, РёР· РєРѕС‚РѕСЂРѕРіРѕ РѕРЅ Р±СѓРґРµС‚ РїРѕР»СѓС‡Р°С‚СЊ РґР°РЅРЅС‹Рµ
         an.analyser.connect(an.node);
-        //Связываем все с выходом
+        //РЎРІСЏР·С‹РІР°РµРј РІСЃРµ СЃ РІС‹С…РѕРґРѕРј
         an.node.connect(an.context.destination);
         an.source.connect(an.context.destination);
-        //подписываемся на событие изменения входных данных
+        //РїРѕРґРїРёСЃС‹РІР°РµРјСЃСЏ РЅР° СЃРѕР±С‹С‚РёРµ РёР·РјРµРЅРµРЅРёСЏ РІС…РѕРґРЅС‹С… РґР°РЅРЅС‹С…
         an.node.onaudioprocess = function () {
             an.analyser.getByteFrequencyData(an.bands);
             if (!an.audio.paused) {
