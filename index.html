@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <style>
+        #main-canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <button onclick="drawer.clear()">clear</button>
+    <!--<canvas id="main-canvas"></canvas>-->
+
+    <script src="analyse.js"></script>
+    <script>
+        //document.createElement('canvas').getContext().
+        let canvas = document.createElement('canvas');
+        canvas.height = 500;
+        canvas.width = 1000;
+        document.body.appendChild(canvas);
+        let ctx = canvas.getContext('2d');
+
+        let drawer = {
+            colors: ['#ff0000', '#ffa500', '#ffff00', '#00ff00', '#42aaff', '#0000ff', '#8b00ff'],
+            i: 0,
+            ctx: ctx,
+            clear: function () {
+                this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height)
+            },
+            draw: function (band) {
+                //this.clear();
+                let self = this;
+
+                self.ctx.closePath(); self.clear();
+
+                let coef = self.colors.length * 1.0 / band.length;
+
+                band.forEach(function (val, index) {
+                    self.drawLine(val, index);
+                    self.drawCircle(val, index, coef);
+                });
+
+                //if (self.i < 1000)
+                //    self.i++;
+                //else { self.i = 0; self.ctx.closePath(); self.clear(); }
+
+                //self.ctx.beginPath();
+                //self.ctx.moveTo(self.i, height);
+
+
+                //self.ctx.lineTo(self.i, height - band[0]);
+                //self.ctx.stroke();
+                //self.ctx.closePath();
+            },
+            drawCircle(val, index, coef) {
+                let height = this.ctx.canvas.height / 2;
+                this.ctx.strokeStyle = this.colors[Math.round(val * coef)];
+                
+                this.ctx.beginPath();
+                this.ctx.arc(this.ctx.canvas.width / 2, height, val, 0, 2 * Math.PI);
+                this.ctx.stroke();
+                
+                this.ctx.closePath();
+            },
+            drawLine(val, index) {
+                let height = this.ctx.canvas.height / 2;
+                let x = index * 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, height);
+                this.ctx.lineTo(x, height - val);
+                this.ctx.stroke();
+                this.ctx.closePath();
+            }
+
+        }
+
+
+        let analyse = new Analyse('test3.ogg');
+        analyse.audio.controls = true;
+        document.body.appendChild(analyse.audio);
+        analyse.update = function (band) {
+            //console.log(band);
+            drawer.draw(band);
+        }
+    </script>
+</body>
+</html>
