@@ -12,10 +12,10 @@
     </style>
 </head>
 <body>
-    <button onclick="drawer.clear()">clear</button>
+    <button onclick="audioAnalyzerDrawer.clear()">clear</button>
     <!--<canvas id="main-canvas"></canvas>-->
 
-    <script src="analyse.js"></script>
+    <script src="audio-analyser.js"></script>
     <script>
         //document.createElement('canvas').getContext().
         let canvas = document.createElement('canvas');
@@ -24,46 +24,35 @@
         document.body.appendChild(canvas);
         let ctx = canvas.getContext('2d');
 
-        let drawer = {
+        let audioAnalyzerDrawer = {
             colors: ['#ff0000', '#ffa500', '#ffff00', '#00ff00', '#42aaff', '#0000ff', '#8b00ff'],
             i: 0,
             ctx: ctx,
             clear: function () {
-                this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height)
+                //this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height)
+                this.ctx.fillStyle = 'rgb(255,255,255,0.2)';
+                this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height)
             },
-            draw: function (band) {
-                //this.clear();
+            draw(band) {
+
                 let self = this;
-
-                self.ctx.closePath(); self.clear();
-
-                let coef = self.colors.length * 1.0 / band.length;
+                self.ctx.closePath();
+                self.clear();
+                let coefColor = self.colors.length * 1.0 / band.length;
 
                 band.forEach(function (val, index) {
                     self.drawLine(val, index);
-                    self.drawCircle(val, index, coef);
+                    self.drawCircle(val, index, coefColor);
                 });
-
-                //if (self.i < 1000)
-                //    self.i++;
-                //else { self.i = 0; self.ctx.closePath(); self.clear(); }
-
-                //self.ctx.beginPath();
-                //self.ctx.moveTo(self.i, height);
-
-
-                //self.ctx.lineTo(self.i, height - band[0]);
-                //self.ctx.stroke();
-                //self.ctx.closePath();
             },
-            drawCircle(val, index, coef) {
+            drawCircle(val, index, coefColor) {
                 let height = this.ctx.canvas.height / 2;
-                this.ctx.strokeStyle = this.colors[Math.round(val * coef)];
-                
+                this.ctx.strokeStyle = this.colors[Math.round(val * coefColor)];
+
                 this.ctx.beginPath();
                 this.ctx.arc(this.ctx.canvas.width / 2, height, val, 0, 2 * Math.PI);
                 this.ctx.stroke();
-                
+
                 this.ctx.closePath();
             },
             drawLine(val, index) {
@@ -74,18 +63,122 @@
                 this.ctx.lineTo(x, height - val);
                 this.ctx.stroke();
                 this.ctx.closePath();
+            },
+            drawLineSequence(val, index) {
+
+                if (this.i < 1000)
+                    this.i++;
+                else { this.i = 0; this.ctx.closePath(); this.clear(); }
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(self.i, height);
+                this.ctx.lineTo(this.i, this.ctx.canvas.height / 2 - val);
+                this.ctx.stroke();
+                this.ctx.closePath();
+            }
+        }
+
+        function MoveDrawer(ctx, imgParticleUrl, imgParticleCount) {
+            let moveDrawer = this;
+
+            this.canvas = ctx.canvas;
+            this.ctx = ctx;
+            this.center = { x: canvas.width / 2, y: canvas.height / 2 };
+            this.imgParticle = document.createElement('img');
+            this.imgParticle.src = imgParticleUrl;
+
+            //this.particles = new Array(imgParticleCount).map(function (val, i) {
+            //    console.log('z' +i);
+            //   return new Particle(self.imgParticle, ctx);
+            //});
+
+            this.particles = [];
+            for (let i = 0; i < imgParticleCount; i++) {
+                this.particles.push(new Particle(moveDrawer.imgParticle, ctx, i));
+            };
+
+
+            this.draw = function (band) {
+                for (let i = 0; i < moveDrawer.particles.length; i++) {
+                    let particle = moveDrawer.particles[i];
+                    particle.draw(band);
+
+                }
             }
 
+            function Particle(img, ctx, index) {
+                this.index = index;
+                this.maxSize = 100;
+                let particle = this;
+                this.ctx = ctx;
+                this.img = img;
+
+                this.init = function () {
+                    this.size = { w: 0, h: 0, wstep: 0, hstep: 0 };
+                    this.pos = { x: ~~(ctx.canvas.width * Math.random()), y: ~~(ctx.canvas.height * Math.random())/*ctx.canvas.height / 2*/ };
+                    this.direction = { x: random(3), y: random(3) };
+                    this.sizeStep = ~~(Math.random() * 8) || 1;
+                }
+
+                this.init();
+
+                this.draw = function (band) {
+                    particle.ctx.drawImage(particle.img, particle.pos.x, particle.pos.y, particle.size.w, particle.size.h);
+                    particle.updateState(band);
+                }
+
+                this.updateState = function (band) {
+
+                    let scale = band[particle.index *2] / 256.0 * 100;
+
+                    particle.pos.x += particle.direction.x;
+                    particle.pos.y += particle.direction.y;
+                    particle.size.wstep += particle.sizeStep;
+                    particle.size.hstep += particle.sizeStep;
+                    particle.size.w = particle.size.wstep + scale;
+                    particle.size.h = particle.size.hstep + scale;
+
+
+                    if (particle.size.wstep > particle.maxSize) {
+                        particle.init();
+                    }
+                }
+
+                function random(maxModule) {
+                    let rand = Math.round(Math.random() * maxModule) || 1;
+                    return Math.random() > 0.5 ? rand : - rand;
+                };
+            };
+
         }
 
+        let moveDrawer = new MoveDrawer(ctx, 'star.jpg', 80);
 
-        let analyse = new Analyse('test3.ogg');
-        analyse.audio.controls = true;
-        document.body.appendChild(analyse.audio);
-        analyse.update = function (band) {
+        let analyser = new AudioAnalyser('sound.mp3');
+        //analyser.audio.controls = true;
+        document.body.appendChild(analyser.audio);
+        analyser.update = function (band) {
             //console.log(band);
-            drawer.draw(band);
+            //audioAnalyzerDrawer.draw(band);
+            //moveDrawer.draw();
+
+            requestAnimationFrame(function () {
+                audioAnalyzerDrawer.draw(band);
+                moveDrawer.draw(band);
+            });
         }
+
+
+
+                    //function draw() {
+
+                    //    //ctx.fillStyle =
+                    //    //ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                    //    moveDrawer.draw();
+                    //    requestAnimationFrame(draw);
+                    //}
+
+                    //draw();
     </script>
 </body>
 </html>
